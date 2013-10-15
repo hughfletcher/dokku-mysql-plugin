@@ -1,0 +1,19 @@
+#! /bin/sh
+
+buildTestClient
+
+testCreateFreshDb () {
+   assertEquals "it works" "it works"
+   assertEquals "it work" "it works"
+}
+
+# testCreateExistingDb
+# testInfo
+# testLinkIfAppExists
+# testLinkIfAppDoesNotExists
+# testLogs
+
+buildTestClient () {
+    echo 'boo'
+}
+

@@ -1,0 +1,167 @@
+#!/bin/bash
+set -e; 
+
+# Check if name is specified
+if [[ $1 == mysql:* ]]; then
+    if [[ -z $2 ]]; then
+        echo "You must specify an app name"
+        exit 1
+    else
+        APP="$2"
+        # Check if app exists with the same name
+        if [[ -d "/home/git/$APP" ]]; then
+            APP_EXISTS=true
+        else
+            APP_EXISTS=false
+        fi
+    fi
+fi
+
+case "$1" in
+
+  mysql:create)
+    DB_IMAGE=mysql/$APP
+    # Check if DB container is installed
+    IMAGE=$(docker images | grep "hughfletcher/mysql " |  awk '{print $3}')
+    if [[ -z $IMAGE ]]; then
+        echo "MySql image not found... Did you run 'dokku plugins-install' ?"
+        exit 1
+    fi
+    # Check if an existing DB volume exists
+    if [[ -d "/var/lib/docker/volumes/mysql-$APP" ]]; then
+        VOLUME="/var/lib/docker/volumes/mysql-$APP/layer:/var/lib/mysql"
+        echo
+        echo "-----> Reusing mysql/$APP database"
+    else
+        VOLUME="/var/lib/mysql"
+        # Generate a random password for DB user
+        DB_PASS=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c 16)
+        # DB_NAME=$(echo "www.atomic24.com" | sed -e 's/\.//g')
+        # DB_USER='user'$RANDOM
+        # Temporarily store it to a file
+        if [[ ! -d /home/git/.mysql ]]; then
+            mkdir -p /home/git/.mysql
+            chown -R git: /home/git/.mysql
+        fi
+        echo $DB_PASS > "/home/git/.mysql/pwd_$APP"
+        chown git: "/home/git/.mysql/pwd_$APP"
+    fi
+    # Fork DB image
+    ID=$(docker run -d hughfletcher/mysql exit 0)    
+    docker wait $ID > /dev/null
+    IMAGE=$(docker commit $ID)
+    docker tag $IMAGE $DB_IMAGE
+    # Launch container
+    ID=$(docker run -v $VOLUME -d $DB_IMAGE /usr/sbin/mysqld)
+
+    if [[ ! -d "/var/lib/docker/volumes/mysql-$APP" ]]; then
+        IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+        sleep 4
+        docker run $DB_IMAGE mysqladmin -h $IP -u admin -p'mysql-server' password $DB_PASS
+        docker run $DB_IMAGE mysqladmin -h $IP -u admin -p$DB_PASS create 'db'
+        # docker run mysql/create mysql -h $IP -u admin -p'newpass' -e "RENAME USER admin@'%' TO $DB_USER@'%';" 
+        
+        # Rename persistent volume
+        VOLUME_PATH=$(docker inspect $ID | grep "/var/lib/docker/volumes/" | awk '{print $2}' | sed -e"s/\/layer//" | sed -e's/"//g')
+        mv $VOLUME_PATH "/var/lib/docker/volumes/mysql-$APP"
+        sleep 1
+    fi
+    # Link to a potential existing app
+    dokku mysql:link $APP $APP
+    echo
+    echo "-----> MySql container created: $DB_IMAGE"
+    sleep 1
+    dokku mysql:info $APP
+    ;;
+
+  mysql:delete)
+    DB_IMAGE=mysql/$APP
+    # Stop the container
+    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+    if [[ ! -z $ID ]]; then
+        docker stop $ID
+    fi
+    # Remove image
+    IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}')
+    if [[ ! -z $IMAGE ]]; then
+        docker rmi $IMAGE
+    fi
+    # Remove persistent volume
+    if [[ -d "/var/lib/docker/volumes/mysql-$APP" ]]; then
+        rm -rf "/var/lib/docker/volumes/mysql-$APP"
+    fi
+    echo
+    echo "-----> MySql container deleted: $DB_IMAGE"
+    ;;
+
+  mysql:info)
+    DB_IMAGE=mysql/$APP
+    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+    IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    # PORT=$(docker port $ID 5432)
+    echo
+    echo "       Host: $IP"
+    echo "       User: 'admin'"
+    if [[ -f "/home/git/.mysql/pwd_$APP" ]]; then
+        echo "       Password: '$(cat "/home/git/.mysql/pwd_$APP")'"
+    fi
+    echo "       Database: 'db'"
+    # echo "       Public port: $PORT"
+    echo "       Internal port: 3306"
+    echo
+    ;;
+
+  mysql:link)
+    if $APP_EXISTS; then
+        # Check argument
+        if [[ -z $3 ]]; then
+            echo "You must specify a database name"
+            exit 1
+        fi
+        DB_IMAGE="mysql/$3"
+        # Check temporarily file
+        if [[ ! -f "/home/git/.mysql/pwd_$APP" ]]; then
+            echo "Database is already linked"
+            exit 1
+        fi
+        DB_PASSWORD=$(cat "/home/git/.mysql/pwd_$APP")
+        ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+        IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+        # Write database connection vars to app's ENV file
+        HOST="DB_HOST=$IP"
+        cat "/home/git/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "/home/git/$APP/ENV"
+        USER="DB_USER=admin"
+        cat "/home/git/$APP/ENV" | grep "$USER" || echo "export $USER" >> "/home/git/$APP/ENV"
+        PASS="DB_PASS=$DB_PASSWORD"
+        cat "/home/git/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "/home/git/$APP/ENV"
+        NAME="DB_NAME=db"
+        cat "/home/git/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "/home/git/$APP/ENV"
+        echo
+        echo "-----> $APP linked to $DB_IMAGE database"
+        rm "/home/git/.mysql/pwd_$APP"
+    fi
+    ;;
+
+  mysql:logs)
+    DB_IMAGE=mysql/$APP
+    ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}')
+    docker logs $ID | tail -n 100
+    ;;
+
+  mysql-tests)
+        echo ">>> Running Tests"
+        /usr/bin/shunit2 /var/lib/dokku/plugins/mysql/tests/commands
+    ;;
+
+  help)
+    cat && cat<<EOF
+    mysql:create <app>     Create a MySql container
+    mysql:delete <app>     Delete specified MySql container
+    mysql:info <app>       Display database informations
+    mysql:link <app> <db>  Link an app to a MySql database
+    mysql:logs <app>       Display last logs from MySql container
+EOF
+    ;;
+
+esac
+cat
