@@ -98,6 +98,7 @@ case "$1" in
     DB_IMAGE=mysql/$APP
     ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
     IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    echo "$ID"
     # PORT=$(docker port $ID 5432)
     echo
     echo "       Host: $IP"
