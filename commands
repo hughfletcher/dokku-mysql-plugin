@@ -129,6 +129,7 @@ case "$1" in
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
         # Write database connection vars to app's ENV file
+        # I know there has to be a more eloquent method of doing this...
         HOST="DB_HOST=$IP"
         cat "/home/git/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "/home/git/$APP/ENV"
         USER="DB_USER=admin"
@@ -137,6 +138,8 @@ case "$1" in
         cat "/home/git/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "/home/git/$APP/ENV"
         NAME="DB_NAME=db"
         cat "/home/git/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "/home/git/$APP/ENV"
+        PORT="DB_PORT=3306"
+        cat "/home/git/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> "/home/git/$APP/ENV"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
         rm "/home/git/.mysql/pwd_$APP"
