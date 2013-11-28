@@ -43,8 +43,8 @@ case "$1" in
             mkdir -p  $DOKKU_ROOT/.mysql
             chown -R dokku:  $DOKKU_ROOT/.mysql
         fi
-        echo $DB_PASS > " $DOKKU_ROOT/.mysql/pwd_$APP"
-        chown dokku: " $DOKKU_ROOT/.mysql/pwd_$APP"
+        echo $DB_PASS > "$DOKKU_ROOT/.mysql/pass_$APP"
+        chown dokku: "$DOKKU_ROOT/.mysql/pass_$APP"
     fi
     # Fork DB image
     ID=$(docker run -d hughfletcher/mysql exit 0)    
@@ -103,8 +103,8 @@ case "$1" in
     echo
     echo "       Host: $IP"
     echo "       User: 'admin'"
-    if [[ -f " $DOKKU_ROOT/.mysql/pwd_$APP" ]]; then
-        echo "       Password: '$(cat " $DOKKU_ROOT/.mysql/pwd_$APP")'"
+    if [[ -f " $DOKKU_ROOT/.mysql/pass_$APP" ]]; then
+        echo "       Password: '$(cat " $DOKKU_ROOT/.mysql/pass_$APP")'"
     fi
     echo "       Database: 'db'"
     # echo "       Public port: $PORT"
@@ -121,11 +121,11 @@ case "$1" in
         fi
         DB_IMAGE="mysql/$3"
         # Check temporarily file
-        if [[ ! -f " $DOKKU_ROOT/.mysql/pwd_$APP" ]]; then
+        if [[ ! -f " $DOKKU_ROOT/.mysql/pass_$APP" ]]; then
             echo "Database is already linked"
             exit 1
         fi
-        DB_PASSWORD=$(cat " $DOKKU_ROOT/.mysql/pwd_$APP")
+        DB_PASSWORD=$(cat " $DOKKU_ROOT/.mysql/pass_$APP")
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
         # Write database connection vars to app's ENV file
@@ -142,7 +142,7 @@ case "$1" in
         cat " $DOKKU_ROOT/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> " $DOKKU_ROOT/$APP/ENV"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
-        rm " $DOKKU_ROOT/.mysql/pwd_$APP"
+        rm " $DOKKU_ROOT/.mysql/pass_$APP"
     fi
     ;;
 
