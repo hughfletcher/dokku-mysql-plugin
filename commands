@@ -11,7 +11,7 @@ if [[ $1 == mysql:* ]]; then
     else
         APP="$2"
         # Check if app exists with the same name
-        if [[ -d " $DOKKU_ROOT/$APP" ]]; then
+        if [[ -d "$DOKKU_ROOT/$APP" ]]; then
             APP_EXISTS=true
         else
             APP_EXISTS=false
@@ -41,9 +41,9 @@ case "$1" in
         # DB_NAME=$(echo "www.atomic24.com" | sed -e 's/\.//g')
         # DB_USER='user'$RANDOM
         # Temporarily store it to a file
-        if [[ ! -d  $DOKKU_ROOT/.mysql ]]; then
-            mkdir -p  $DOKKU_ROOT/.mysql
-            chown -R dokku:  $DOKKU_ROOT/.mysql
+        if [[ ! -d $DOKKU_ROOT/.mysql ]]; then
+            mkdir -p $DOKKU_ROOT/.mysql
+            chown -R dokku: $DOKKU_ROOT/.mysql
         fi
         echo $DB_PASS > "$DOKKU_ROOT/.mysql/pass_$APP"
         chown dokku: "$DOKKU_ROOT/.mysql/pass_$APP"
@@ -105,8 +105,8 @@ case "$1" in
     echo
     echo "       Host: $IP"
     echo "       User: 'admin'"
-    if [[ -f " $DOKKU_ROOT/.mysql/pass_$APP" ]]; then
-        echo "       Password: '$(cat " $DOKKU_ROOT/.mysql/pass_$APP")'"
+    if [[ -f "$DOKKU_ROOT/.mysql/pass_$APP" ]]; then
+        echo "       Password: '$(cat "$DOKKU_ROOT/.mysql/pass_$APP")'"
     fi
     echo "       Database: 'db'"
     # echo "       Public port: $PORT"
@@ -123,28 +123,28 @@ case "$1" in
         fi
         DB_IMAGE="mysql/$3"
         # Check temporarily file
-        if [[ ! -f " $DOKKU_ROOT/.mysql/pass_$APP" ]]; then
+        if [[ ! -f "$DOKKU_ROOT/.mysql/pass_$APP" ]]; then
             echo "Database is already linked"
             exit 1
         fi
-        DB_PASSWORD=$(cat " $DOKKU_ROOT/.mysql/pass_$APP")
+        DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$APP")
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
         # Write database connection vars to app's ENV file
         # I know there has to be a more eloquent method of doing this...
         HOST="DB_HOST=$IP"
-        cat " $DOKKU_ROOT/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> " $DOKKU_ROOT/$APP/ENV"
+        cat "$DOKKU_ROOT/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "$DOKKU_ROOT/$APP/ENV"
         USER="DB_USER=admin"
-        cat " $DOKKU_ROOT/$APP/ENV" | grep "$USER" || echo "export $USER" >> " $DOKKU_ROOT/$APP/ENV"
+        cat "$DOKKU_ROOT/$APP/ENV" | grep "$USER" || echo "export $USER" >> "$DOKKU_ROOT/$APP/ENV"
         PASS="DB_PASS=$DB_PASSWORD"
-        cat " $DOKKU_ROOT/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> " $DOKKU_ROOT/$APP/ENV"
+        cat "$DOKKU_ROOT/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "$DOKKU_ROOT/$APP/ENV"
         NAME="DB_NAME=db"
-        cat " $DOKKU_ROOT/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> " $DOKKU_ROOT/$APP/ENV"
+        cat "$DOKKU_ROOT/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "$DOKKU_ROOT/$APP/ENV"
         PORT="DB_PORT=3306"
-        cat " $DOKKU_ROOT/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> " $DOKKU_ROOT/$APP/ENV"
+        cat "$DOKKU_ROOT/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> "$DOKKU_ROOT/$APP/ENV"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
-        rm " $DOKKU_ROOT/.mysql/pass_$APP"
+        rm "$DOKKU_ROOT/.mysql/pass_$APP"
     fi
     ;;
 
