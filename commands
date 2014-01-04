@@ -99,7 +99,7 @@ case "$1" in
   mysql:info)
     DB_IMAGE=mysql/$APP
     ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
-    IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+    IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
     echo "$ID"
     # PORT=$(docker port $ID 5432)
     echo
@@ -129,7 +129,7 @@ case "$1" in
         fi
         DB_PASSWORD=$(cat " $DOKKU_ROOT/.mysql/pass_$APP")
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
-        IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+        IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
         # Write database connection vars to app's ENV file
         # I know there has to be a more eloquent method of doing this...
         HOST="DB_HOST=$IP"
