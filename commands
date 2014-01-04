@@ -130,18 +130,7 @@ case "$1" in
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$APP")
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
-        # Write database connection vars to app's ENV file
-        # I know there has to be a more eloquent method of doing this...
-        HOST="DB_HOST=$IP"
-        cat "$DOKKU_ROOT/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "$DOKKU_ROOT/$APP/ENV"
-        USER="DB_USER=admin"
-        cat "$DOKKU_ROOT/$APP/ENV" | grep "$USER" || echo "export $USER" >> "$DOKKU_ROOT/$APP/ENV"
-        PASS="DB_PASS=$DB_PASSWORD"
-        cat "$DOKKU_ROOT/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "$DOKKU_ROOT/$APP/ENV"
-        NAME="DB_NAME=db"
-        cat "$DOKKU_ROOT/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "$DOKKU_ROOT/$APP/ENV"
-        PORT="DB_PORT=3306"
-        cat "$DOKKU_ROOT/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> "$DOKKU_ROOT/$APP/ENV"
+        dokku config:set $APP "DATABASE_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
         rm "$DOKKU_ROOT/.mysql/pass_$APP"
