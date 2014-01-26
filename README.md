@@ -3,6 +3,11 @@
 Create mysql containers on the fly or link them persistantly to your web app you push up to your Dokku install.
 See [Dokku](https://github.com/progrium/dokku) for the bigger picture.
 
+##Requiremets
+    
+    Dokku version >=0.2.1
+    Latest docker
+
 ##Install
 
     cd /var/lib/dokku/plugins
