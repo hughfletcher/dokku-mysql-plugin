@@ -1,5 +1,7 @@
 #!/bin/bash
-set -e; 
+set -e;
+
+DOKKU_ROOT=/home/dokku
 
 # Check if name is specified
 if [[ $1 == mysql:* ]]; then
@@ -62,7 +64,11 @@ case "$1" in
         # docker run mysql/create mysql -h $IP -u admin -p'newpass' -e "RENAME USER admin@'%' TO $DB_USER@'%';" 
         
         # Rename persistent volume
-        VOLUME_PATH=$(docker inspect $ID | grep "/var/lib/docker/volumes/" | awk '{print $2}' | sed -e"s/\/layer//" | sed -e's/"//g')
+        VOLUME_PATH=$(docker inspect $ID | grep "/var/lib/docker/vfs/dir/" | awk '{print $2}' | sed -e's/"//g')
+        if [[ -z $VOLUME_PATH ]]; then
+            echo "Your docker version is too old, please update it"
+            exit 1
+        fi
         mv $VOLUME_PATH "/var/lib/docker/volumes/mysql-$APP"
         sleep 1
     fi
