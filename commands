@@ -9,7 +9,7 @@ if [[ $1 == mysql:* ]]; then
     else
         APP="$2"
         # Check if app exists with the same name
-        if [[ -d "/home/git/$APP" ]]; then
+        if [[ -d "/home/dokku/$APP" ]]; then
             APP_EXISTS=true
         else
             APP_EXISTS=false
@@ -39,12 +39,12 @@ case "$1" in
         # DB_NAME=$(echo "www.atomic24.com" | sed -e 's/\.//g')
         # DB_USER='user'$RANDOM
         # Temporarily store it to a file
-        if [[ ! -d /home/git/.mysql ]]; then
-            mkdir -p /home/git/.mysql
-            chown -R git: /home/git/.mysql
+        if [[ ! -d /home/dokku/.mysql ]]; then
+            mkdir -p /home/dokku/.mysql
+            chown -R dokku: /home/dokku/.mysql
         fi
-        echo $DB_PASS > "/home/git/.mysql/pwd_$APP"
-        chown git: "/home/git/.mysql/pwd_$APP"
+        echo $DB_PASS > "/home/dokku/.mysql/pwd_$APP"
+        chown dokku: "/home/dokku/.mysql/pwd_$APP"
     fi
     # Fork DB image
     ID=$(docker run -d hughfletcher/mysql exit 0)    
@@ -103,8 +103,8 @@ case "$1" in
     echo
     echo "       Host: $IP"
     echo "       User: 'admin'"
-    if [[ -f "/home/git/.mysql/pwd_$APP" ]]; then
-        echo "       Password: '$(cat "/home/git/.mysql/pwd_$APP")'"
+    if [[ -f "/home/dokku/.mysql/pwd_$APP" ]]; then
+        echo "       Password: '$(cat "/home/dokku/.mysql/pwd_$APP")'"
     fi
     echo "       Database: 'db'"
     # echo "       Public port: $PORT"
@@ -121,28 +121,28 @@ case "$1" in
         fi
         DB_IMAGE="mysql/$3"
         # Check temporarily file
-        if [[ ! -f "/home/git/.mysql/pwd_$APP" ]]; then
+        if [[ ! -f "/home/dokku/.mysql/pwd_$APP" ]]; then
             echo "Database is already linked"
             exit 1
         fi
-        DB_PASSWORD=$(cat "/home/git/.mysql/pwd_$APP")
+        DB_PASSWORD=$(cat "/home/dokku/.mysql/pwd_$APP")
         ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
         # Write database connection vars to app's ENV file
         # I know there has to be a more eloquent method of doing this...
         HOST="DB_HOST=$IP"
-        cat "/home/git/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "/home/git/$APP/ENV"
+        cat "/home/dokku/$APP/ENV" | grep "$HOST" || echo "export $HOST" >> "/home/dokku/$APP/ENV"
         USER="DB_USER=admin"
-        cat "/home/git/$APP/ENV" | grep "$USER" || echo "export $USER" >> "/home/git/$APP/ENV"
+        cat "/home/dokku/$APP/ENV" | grep "$USER" || echo "export $USER" >> "/home/dokku/$APP/ENV"
         PASS="DB_PASS=$DB_PASSWORD"
-        cat "/home/git/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "/home/git/$APP/ENV"
+        cat "/home/dokku/$APP/ENV" | grep "$PASS" || echo "export $PASS" >> "/home/dokku/$APP/ENV"
         NAME="DB_NAME=db"
-        cat "/home/git/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "/home/git/$APP/ENV"
+        cat "/home/dokku/$APP/ENV" | grep "$NAME" || echo "export $NAME" >> "/home/dokku/$APP/ENV"
         PORT="DB_PORT=3306"
-        cat "/home/git/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> "/home/git/$APP/ENV"
+        cat "/home/dokku/$APP/ENV" | grep "$PORT" || echo "export $PORT" >> "/home/dokku/$APP/ENV"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
-        rm "/home/git/.mysql/pwd_$APP"
+        rm "/home/dokku/.mysql/pwd_$APP"
     fi
     ;;
 
