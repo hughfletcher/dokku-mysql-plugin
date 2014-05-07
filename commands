@@ -62,7 +62,8 @@ case "$1" in
         # docker run mysql/create mysql -h $IP -u admin -p'newpass' -e "RENAME USER admin@'%' TO $DB_USER@'%';" 
         
         # Rename persistent volume
-        VOLUME_PATH=$(docker inspect $ID | grep "/var/lib/docker/volumes/" | awk '{print $2}' | sed -e"s/\/layer//" | sed -e's/"//g')
+        #VOLUME_PATH=$(docker inspect $ID | grep "/var/lib/docker/volumes/" | awk '{print $2}' | sed -e"s/\/layer//" | sed -e's/"//g')
+        VOLUME_PATH=$(docker inspect $ID | grep /var/lib/docker/vfs/dir/ | awk '{print $2}' | sed -e's/"//g')
         mv $VOLUME_PATH "/var/lib/docker/volumes/mysql-$APP"
         sleep 1
     fi
