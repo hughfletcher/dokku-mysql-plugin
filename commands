@@ -2,25 +2,29 @@
 set -e; 
 
 DOCKER_VOLUMES="/var/lib/docker/vfs/dir"
-# Check if name is specified
-if [[ $1 == mysql:* ]]; then
-    if [[ -z $2 ]]; then
-        echo "You must specify an app name"
-        exit 1
-    else
-        APP="$2"
-        # Check if app exists with the same name
-        if [[ -d "$DOKKU_ROOT/$APP" ]]; then
-            APP_EXISTS=true
-        else
-            APP_EXISTS=false
-        fi
-    fi
-fi
+
+function check_app() {
+ # Check if name is specified
+ if [[ $1 == mysql:* ]]; then
+     if [[ -z $2 ]]; then
+         echo "You must specify an app name"
+         exit 1
+     else
+         APP="$2"
+         # Check if app exists with the same name
+         if [[ -d "$DOKKU_ROOT/$APP" ]]; then
+             APP_EXISTS=true
+         else
+             APP_EXISTS=false
+         fi
+     fi
+ fi
+}
 
 case "$1" in
 
   mysql:create)
+    check_app $*
     DB_IMAGE=mysql/$APP
     # Check if DB container is installed
     IMAGE=$(docker images | grep "hughfletcher/mysql " |  awk '{print $3}')
@@ -29,7 +33,7 @@ case "$1" in
         exit 1
     fi
     # Check if an existing DB volume exists
-   if [[ -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
+    if [[ -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
         VOLUME="`cat $DOKKU_ROOT/.mysql/volume_$APP`:/var/lib/mysql"
         echo
         echo "-----> Reusing mysql/$APP database"
@@ -76,6 +80,7 @@ case "$1" in
     ;;
 
   mysql:delete)
+    check_app $*
     DB_IMAGE=mysql/$APP
     # Stop the container
     ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
@@ -96,6 +101,7 @@ case "$1" in
     ;;
 
   mysql:info)
+    check_app $*
     DB_IMAGE=mysql/$APP
     ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
     IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
@@ -114,6 +120,7 @@ case "$1" in
     ;;
 
   mysql:link)
+    check_app $*
     if $APP_EXISTS; then
         # Check argument
         if [[ -z $3 ]]; then
@@ -137,12 +144,18 @@ case "$1" in
     ;;
 
   mysql:logs)
+    check_app $*
     DB_IMAGE=mysql/$APP
     ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}')
     docker logs $ID | tail -n 100
     ;;
 
+  mysql:list)
+    find $DOKKU_ROOT/.mysql/volume* | awk -F _ '{ print $2 }'  
+    ;;      
+
   mysql-tests)
+     check_app $*
         echo ">>> Running Tests"
         /usr/bin/shunit2 /var/lib/dokku/plugins/mysql/tests/commands
     ;;
@@ -154,6 +167,7 @@ case "$1" in
     mysql:info <app>       Display database informations
     mysql:link <app> <db>  Link an app to a MySql database
     mysql:logs <app>       Display last logs from MySql container
+    mysql:list             List all MySql databases created
 EOF
     ;;
 
