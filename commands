@@ -82,19 +82,26 @@ case "$1" in
   mysql:delete)
     check_app $*
     DB_IMAGE=mysql/$APP
-    # Stop the container
-    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+    # unlink from apps
+    #dokku mysql:unlink $APP    
+    # Stop the container and remove it
+    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}' | paste -d " " -s)
     if [[ ! -z $ID ]]; then
+        echo "-----> Mysql containers stopped and removed: $ID"
         docker stop $ID
+        docker rm $ID
     fi
     # Remove image
-    IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}')
+    IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}' | paste -d " " -s)
     if [[ ! -z $IMAGE ]]; then
+        echo "-----> Mysql container images removed: $IMAGE"
         docker rmi $IMAGE
     fi
     # Remove persistent volume
     if [[ -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
+        echo "-----> MySql persistent volumes deleted"
         rm -rf "`cat "$DOKKU_ROOT/.mysql/volume_$APP"`"
+        rm -rf $DOKKU_ROOT/.mysql/volume_$APP
     fi
     echo
     echo "-----> MySql container deleted: $DB_IMAGE"
@@ -103,7 +110,7 @@ case "$1" in
   mysql:info)
     check_app $*
     DB_IMAGE=mysql/$APP
-    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+    ID=$(docker ps | grep "$DB_IMAGE":latest |  awk '{print $1}')
     IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
     echo "$ID"
     # PORT=$(docker port $ID 5432)
@@ -127,19 +134,24 @@ case "$1" in
             echo "You must specify a database name"
             exit 1
         fi
+        DB=$3
         DB_IMAGE="mysql/$3"
-        # Check temporarily file
-        if [[ ! -f "$DOKKU_ROOT/.mysql/pass_$APP" ]]; then
+        # Check link file
+        if [[ -f "$DOKKU_ROOT/$APP/.mysql_$DB" ]]; then
             echo "Database is already linked"
             exit 1
         fi
-        DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$APP")
-        ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}')
+        DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
+        ID=$(docker ps | grep "$DB_IMAGE":latest |  awk '{print $1}')
         IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
-        dokku config:set $APP "DATABASE_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
+        dokku config:set $APP "MYSQL_USER=admin"
+        dokku config:set $APP "MYSQL_PASSWORD=$DB_PASSWORD"
+        dokku config:set $APP "MYSQL_PORT=$PORT"
+        dokku config:set $APP "MYSQL_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
-        rm "$DOKKU_ROOT/.mysql/pass_$APP"
+        # document link
+        touch $DOKKU_ROOT/$APP/.mysql_$DB
     fi
     ;;
 
@@ -163,11 +175,11 @@ case "$1" in
 
   help)
     cat && cat<<EOF
-    mysql:create <app>     Create a MySql container
-    mysql:delete <app>     Delete specified MySql container
-    mysql:info <app>       Display database informations
+    mysql:create <db>      Create a MySql container
+    mysql:delete <db>      Delete specified MySql container
+    mysql:info <db>        Display database informations
     mysql:link <app> <db>  Link an app to a MySql database
-    mysql:logs <app>       Display last logs from MySql container
+    mysql:logs <db>        Display last logs from MySql container
     mysql:list             List all MySql databases created
 EOF
     ;;
