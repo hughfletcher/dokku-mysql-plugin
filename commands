@@ -146,7 +146,8 @@ case "$1" in
   mysql:logs)
     check_app $*
     DB_IMAGE=mysql/$APP
-    ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}')
+    ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
+    echo $ID
     docker logs $ID | tail -n 100
     ;;
 
