@@ -48,7 +48,7 @@ case "$1" in
         chown dokku: "$DOKKU_ROOT/.mysql/pass_$APP"
     fi
     # Fork DB image
-    ID=$(docker run -d hughfletcher/mysql exit 0)   
+    ID=$(docker run -d hughfletcher/mysql /bin/bash "exit 0")   
     docker wait $ID > /dev/null
     IMAGE=$(docker commit $ID)
     docker tag $IMAGE $DB_IMAGE
