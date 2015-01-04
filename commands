@@ -102,8 +102,10 @@ case "$1" in
     fi
     # kill existing container
     ID=$(docker ps | grep $DB_IMAGE | head -c16)
-    docker kill $ID
-    docker wait $ID > /dev/null
+    if [ ! -z $ID ]; then
+    	docker kill $ID
+    	docker wait $ID > /dev/null
+    fi
     # Launch container
     ID=$(docker run -v $VOLUME -d $DB_IMAGE /usr/sbin/mysqld)
     echo "-----> MySql container launched: $DB_IMAGE. Relink your apps."
