@@ -95,6 +95,10 @@ case "$1" in
         echo $DB_PASS > "$DOKKU_ROOT/.mysql/pass_$APP"
         chown dokku: "$DOKKU_ROOT/.mysql/pass_$APP"
     fi
+    # kill existing container
+    ID=$(docker ps | grep $DB_IMAGE | head -c16)
+    docker kill $ID
+    docker wait $ID > /dev/null
     # Launch container
     ID=$(docker run -v $VOLUME -d $DB_IMAGE /usr/sbin/mysqld)
     echo "-----> MySql container launched: $DB_IMAGE"
