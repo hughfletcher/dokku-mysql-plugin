@@ -80,7 +80,8 @@ case "$1" in
     ;;
     
   mysql:restart)
-  	DB_IMAGE=mysql/$APP
+  	check_app $*
+    DB_IMAGE=mysql/$APP
     if [[ -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
         VOLUME="`cat $DOKKU_ROOT/.mysql/volume_$APP`:/var/lib/mysql"
         echo
@@ -105,7 +106,7 @@ case "$1" in
     docker wait $ID > /dev/null
     # Launch container
     ID=$(docker run -v $VOLUME -d $DB_IMAGE /usr/sbin/mysqld)
-    echo "-----> MySql container launched: $DB_IMAGE"
+    echo "-----> MySql container launched: $DB_IMAGE. Relink your apps."
     sleep 1
     dokku mysql:info $APP
     ;;
