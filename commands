@@ -204,6 +204,27 @@ case "$1" in
     fi
     ;;
 
+   mysql:unlink)
+    check_app $*
+    if $APP_EXISTS; then
+        # Check argument
+        if [[ -z $3 ]]; then
+            echo "You must specify a database name"
+            exit 1
+        fi
+        DB=$3
+        DB_IMAGE="mysql/$3"
+        # Check link file
+        if [[ -f "$DOKKU_ROOT/$APP/.mysql_$DB" ]]; then
+            echo "Unlinking. Restart your app"
+            rm "$DOKKU_ROOT/$APP/.mysql_$DB"
+        else
+            echo "$APP is not linked to $DB"
+            exit 1
+        fi
+    fi
+    ;;
+
   mysql:logs)
     check_app $*
     DB_IMAGE=mysql/$APP
@@ -230,6 +251,7 @@ case "$1" in
     mysql:link <app> <db>  Link an app to a MySql database
     mysql:logs <db>        Display last logs from MySql container
     mysql:list             List all MySql databases created
+    mysql:restart db       Restart the database service
 EOF
     ;;
 
