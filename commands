@@ -40,8 +40,8 @@ case "$1" in
         # DB_USER='user'$RANDOM
         # Temporarily store it to a file
         if [[ ! -d /home/$USER/.mysql ]]; then
-            mkdir -p /home/$USER/.mysql
-            chown -R git: /home/$USER/.mysql
+            mkdir -p "/home/$USER/.mysql"
+            chown -R git: "/home/$USER/.mysql"
         fi
         echo $DB_PASS > "/home/$USER/.mysql/pwd_$APP"
         chown git: "/home/$USER/.mysql/pwd_$APP"
