@@ -149,7 +149,7 @@ case "$1" in
   mysql:logs)
     DB_IMAGE=mysql/$APP
     ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}')
-    docker logs $ID | tail -n 100
+    docker logs --tail=100 $ID
     ;;
 
   mysql-tests)
