@@ -60,7 +60,7 @@ case "$1" in
     ID=$(docker run -v $VOLUME -d $DB_IMAGE /usr/sbin/mysqld)
 
     if [[ ! -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
-        IP=$(docker inspect $ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+        IP=$(docker inspect $ID | grep -e "IPAddress.:" | awk '{ print $2 }' | tr -d ',"')
         sleep 4
         docker run $DB_IMAGE mysqladmin -h $IP -u admin -p'mysql-server' password $DB_PASS
         docker run $DB_IMAGE mysqladmin -h $IP -u admin -p$DB_PASS create 'db'
@@ -141,6 +141,7 @@ case "$1" in
     if [[ ! -z $ID ]]; then
         echo "-----> Mysql containers stopped and removed: $ID"
         docker stop $ID
+        sleep 10
         docker rm $ID
     fi
     # Remove image
