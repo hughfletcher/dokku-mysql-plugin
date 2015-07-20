@@ -188,19 +188,16 @@ case "$1" in
             exit 1
         fi
         DB=$3
-        DB_IMAGE="mysql/$3"
+        DB_IMAGE=mysql/$DB
         # Check link file
         if [[ -f "$DOKKU_ROOT/$APP/.mysql_$DB" ]]; then
             echo "Database is already linked. Relinking now..."
             dokku config:unset $APP "MYSQL_USER MYSQL_PASSWORD MYSQL_PORT MYSQL_URL"
         fi
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
-        ID=$(docker ps | grep "$DB_IMAGE":latest |  awk '{print $1}')
-        IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
-        dokku config:set $APP "MYSQL_USER=admin"
-        dokku config:set $APP "MYSQL_PASSWORD=$DB_PASSWORD"
-        dokku config:set $APP "MYSQL_PORT=$PORT"
-        dokku config:set $APP "MYSQL_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
+        ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
+        IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
+        dokku config:set $APP "MYSQL_USER=admin MYSQL_PASSWORD=$DB_PASSWORD MYSQL_PORT=$PORT MYSQL_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
         # document link
