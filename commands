@@ -115,6 +115,7 @@ case "$1" in
     ;;
     
   mysql:shell)
+	check_app $*
   	if [[ -f "$DOKKU_ROOT/.mysql/volume_$APP" ]]; then
         IP=$(docker inspect $ID | grep -e "IPAddress.:" | awk '{ print $2 }' | tr -d ',"')
         sleep 4
