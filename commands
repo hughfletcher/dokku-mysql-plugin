@@ -163,8 +163,8 @@ case "$1" in
   mysql:info)
     check_app $*
     DB_IMAGE=mysql/$APP
-    ID=$(docker ps | grep "$DB_IMAGE":latest |  awk '{print $1}')
-    IP=`echo $(docker inspect -format="{{ .NetworkSettings.IPAddress }}" $ID)`
+    ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
+    IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
     echo "$ID"
     # PORT=$(docker port $ID 5432)
     echo
