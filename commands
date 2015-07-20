@@ -197,7 +197,7 @@ case "$1" in
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
         ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
         IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
-        dokku config:set $APP "MYSQL_USER=admin MYSQL_PASSWORD=$DB_PASSWORD MYSQL_PORT=$PORT MYSQL_URL=mysql2://admin:$DB_PASSWORD@$IP/db"
+        dokku config:set $APP MYSQL_USER=admin MYSQL_PASSWORD=$DB_PASSWORD MYSQL_PORT=$PORT MYSQL_URL=mysql2://admin:$DB_PASSWORD@$IP/db
         echo
         echo "-----> $APP linked to $DB_IMAGE database"
         # document link
