@@ -192,7 +192,7 @@ case "$1" in
         # Check link file
         if [[ -f "$DOKKU_ROOT/$APP/.mysql_$DB" ]]; then
             echo "Database is already linked. Relinking now..."
-            dokku config:unset $APP "MYSQL_USER MYSQL_PASSWORD MYSQL_PORT MYSQL_URL"
+            dokku config:unset $APP MYSQL_USER MYSQL_PASSWORD MYSQL_PORT MYSQL_URL
         fi
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
         ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
