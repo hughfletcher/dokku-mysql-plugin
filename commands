@@ -137,7 +137,7 @@ case "$1" in
     # unlink from apps
     #dokku mysql:unlink $APP    
     # Stop the container and remove it
-    ID=$(docker ps -a | grep "$DB_IMAGE":latest |  awk '{print $1}' | paste -d " " -s)
+    ID=$(docker ps -a | grep "$DB_IMAGE" |  awk '{print $1}' | paste -d " " -s)
     if [[ ! -z $ID ]]; then
         echo "-----> Mysql containers stopped and removed: $ID"
         docker stop $ID
