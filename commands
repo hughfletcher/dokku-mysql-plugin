@@ -246,7 +246,7 @@ case "$1" in
         ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
         IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
-        docker run $DB_IMAGE mysqldump -h $IP -uadmin -p$DB_PASSWORD db
+        docker run $DB_IMAGE mysqldump -h $IP -uadmin -p$DB_PASSWORD --opt db
     else
         echo "$APP does not exist" 
     fi
