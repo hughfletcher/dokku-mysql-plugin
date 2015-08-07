@@ -143,7 +143,8 @@ case "$1" in
         echo "-----> Mysql containers stopped and removed: $ID"
         docker stop $ID
         sleep 10
-        docker rm $ID
+        # https://docs.docker.com/userguide/dockervolumes/
+        docker rm -v $ID
     fi
     # Remove image
     IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}' | paste -d " " -s)
