@@ -205,8 +205,8 @@ case "$1" in
         touch $DOKKU_ROOT/$APP/.mysql_$DB
     fi
     ;;
-
-   mysql:unlink)
+    
+    mysql:unlink)
     check_app $*
     if $APP_EXISTS; then
         # Check argument
@@ -237,7 +237,41 @@ case "$1" in
 
   mysql:list)
     find $DOKKU_ROOT/.mysql/volume* | awk -F _ '{ print $2 }'  
-    ;;      
+    ;;
+    
+  mysql:export)
+    DB=$2
+    if [[ ! -z $DB ]]; then
+        DB_IMAGE=mysql/$DB
+        ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
+        IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
+        DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
+        docker run $DB_IMAGE mysqldump -h $IP -uadmin -p$DB_PASSWORD db
+    else
+        echo "$APP does not exist" 
+    fi
+    ;; 
+    
+  mysql:import)
+    DB=$2
+    URL=$3
+    if [[ ! -z $DB ]]; then
+        DB_IMAGE=mysql/$DB
+        ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
+        IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
+        DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
+        DUMP_FILE=mysql_$DB.sql 
+        HOST_TMP=/tmp
+        CONTAINER_TMP=/mnt/tmp
+        echo "Downloading from $URL to $HOST_TMP/$DUMP_FILE"
+        curl -o $HOST_TMP/$DUMP_FILE $URL
+        echo "Loading $CONTAINER_TMP/$DUMP_FILE into $DB_IMAGE"
+        docker run -v $HOST_TMP:$CONTAINER_TMP $DB_IMAGE /bin/bash -c "mysql -h $IP -uadmin -p$DB_PASSWORD db < $CONTAINER_TMP/$DUMP_FILE" 
+    else
+        echo "$APP does not exist"    
+	fi
+	;;
+    
 
   mysql-tests)
      check_app $*
@@ -254,6 +288,8 @@ case "$1" in
     mysql:logs <db>        Display last logs from MySql container
     mysql:list             List all MySql databases created
     mysql:restart db       Restart the database service
+    mysql:export db        Export the DB to stdout
+    mysql:import db URL    Import DB from URL
 EOF
     ;;
 
