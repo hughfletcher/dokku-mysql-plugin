@@ -68,7 +68,7 @@ case "$1" in
         # docker run mysql/create mysql -h $IP -u admin -p'newpass' -e "RENAME USER admin@'%' TO $DB_USER@'%';" 
         
         # Set volume path reference
-        VOLUME_PATH=$(docker inspect $ID | grep /var/lib/docker/vfs/dir/ | awk '{print $2}' | sed -e's/"//g')
+        VOLUME_PATH=$(docker inspect $ID | grep -E "/var/lib/mysql.*/var/lib/docker" | awk '{print $2}' | sed -e's/"//g')
         echo $VOLUME_PATH > "$DOKKU_ROOT/.mysql/volume_$APP"
         sleep 1
     fi
@@ -143,7 +143,8 @@ case "$1" in
         echo "-----> Mysql containers stopped and removed: $ID"
         docker stop $ID
         sleep 10
-        docker rm $ID
+        # https://docs.docker.com/userguide/dockervolumes/
+        docker rm -v $ID 
     fi
     # Remove image
     IMAGE=$(docker images | grep "$DB_IMAGE " |  awk '{print $1}' | paste -d " " -s)
@@ -246,7 +247,7 @@ case "$1" in
         ID=$(docker ps | grep "$DB_IMAGE" |  awk '{print $1}')
         IP=`echo $(docker inspect --format="{{ .NetworkSettings.IPAddress }}" $ID)`
         DB_PASSWORD=$(cat "$DOKKU_ROOT/.mysql/pass_$DB")
-        docker run $DB_IMAGE mysqldump -h $IP -uadmin -p$DB_PASSWORD db
+        docker run $DB_IMAGE mysqldump -h $IP -uadmin -p$DB_PASSWORD --opt db
     else
         echo "$APP does not exist" 
     fi
